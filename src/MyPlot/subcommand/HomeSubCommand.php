@@ -29,7 +29,7 @@ class HomeSubCommand extends SubCommand
 			$selected = $sender;
 		    $selectedName = $sender->getName();
 			$plotNumber = 1;
-		}elseif(isset($args[0]) and ($selected = $this->getPlugin()->getServer()->getPlayer($args[0])) !== false) {
+		}elseif(isset($args[0]) and ($selected = $this->getPlugin()->getServer()->getPlayer($args[0])) !== null) {
 			$selectedName = $selected->getName();
 			if(stripos($selectedName, "me") !== false) {
 				$selectedName = $sender->getName();
