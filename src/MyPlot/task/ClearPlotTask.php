@@ -5,7 +5,6 @@ namespace MyPlot\task;
 use MyPlot\MyPlot;
 use MyPlot\Plot;
 use pocketmine\block\Block;
-use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\scheduler\Task;
@@ -46,17 +45,11 @@ class ClearPlotTask extends Task {
 	 */
 	public function onRun(int $currentTick) : void {
 		foreach($this->level->getEntities() as $entity) {
-			$excluded = $this->plot->aabb;
-			$included = array_shift($excluded);
-			if($included instanceof AxisAlignedBB and $included->isVectorInXZ($entity)) {
-				foreach($excluded as $aabb) {
-					if(!$aabb->isVectorInXZ($entity)) {
-						if(!$entity instanceof Player) {
-							$entity->flagForDespawn();
-						}else{
-							$this->plugin->teleportPlayerToPlot($entity, $this->plot);
-						}
-					}
+			if($this->plugin->getPlotBB($this->plot)->isVectorInXZ($entity)) {
+				if(!$entity instanceof Player) {
+					$entity->flagForDespawn();
+				}else{
+					$this->plugin->teleportPlayerToPlot($entity, $this->plot);
 				}
 			}
 		}

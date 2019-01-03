@@ -25,7 +25,7 @@ class SQLiteDataProvider extends DataProvider
 			(id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT, X INTEGER, Z INTEGER, name TEXT,
 			 owner TEXT, helpers TEXT, denied TEXT, biome TEXT, pvp INTEGER);");
 		$this->db->exec("CREATE TABLE IF NOT EXISTS merges
-			(id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT, X1 INTEGER, Z1 INTEGER, X2 INTEGER, Z2 INTEGER);");
+			(id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT, X1 INTEGER, Z1 INTEGER, X2 INTEGER UNIQUE, Z2 INTEGER UNIQUE);");
 		try{
 			$this->db->exec("ALTER TABLE plots ADD pvp INTEGER;");
 		}catch(\Exception $e) {
@@ -47,9 +47,9 @@ class SQLiteDataProvider extends DataProvider
 					(abs(Z) = :number AND abs(X) <= :number)
 				)
 			);");
-		$this->sqlMergePlots = $this->db->prepare("INSERT OR REPLACE INTO merges () VALUES ()"); // TODO: fill values
-		$this->sqlUnmergeByPlots = $this->db->prepare("DELETE FROM merges WHERE level = :level AND X2 = :x2 AND Z2 = :z2 AND X1 = :x1 AND Z1 = :z1;");
-		$this->sqlGetMergedBase = $this->db->prepare("SELECT * FROM merges WHERE level = :level AND X2 = :x2 and Z2 = :z2;");
+		$this->sqlMergePlots = $this->db->prepare("INSERT OR REPLACE INTO merges (level, X1, Z1, X2, Z2) VALUES (:level, :x1, :z1, :x2, :z2)");
+		$this->sqlUnmergeByPlots = $this->db->prepare("DELETE FROM merges WHERE level = :level AND X2 = :X AND Z2 = :Z;");
+		$this->sqlGetMergedBase = $this->db->prepare("SELECT * FROM merges WHERE level = :level AND X2 = :X and Z2 = :Z;");
 		$this->plugin->getLogger()->debug("SQLite data provider registered");
 	}
 
@@ -177,6 +177,65 @@ class SQLiteDataProvider extends DataProvider
 		});
 		return $plots;
 	}
+
+	/**
+	 * @param Plot $plotA
+	 * @param Plot $plotB
+	 *
+	 * @return bool
+	 */
+	public function addMergedPlot(Plot $plotA, Plot $plotB) : bool {
+		if($plotA->levelName !== $plotB->levelName)
+			return false;
+		$stmt = $this->sqlMergePlots;
+		$stmt->bindValue(":level",$plotA->levelName, SQLITE3_TEXT);
+		$stmt->bindValue(":x1", $plotA->X, SQLITE3_INTEGER);
+		$stmt->bindValue(":z1", $plotA->Z, SQLITE3_INTEGER);
+		$stmt->bindValue(":x2", $plotB->X, SQLITE3_INTEGER);
+		$stmt->bindValue(":z2", $plotB->Z, SQLITE3_INTEGER);
+		$stmt->reset();
+		$result = $stmt->execute();
+		if($result === false) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * @param Plot $plot
+	 *
+	 * @return bool
+	 */
+	public function removeMergedPlot(Plot $plot) : bool {
+		$stmt = $this->sqlUnmergeByPlots;
+		$stmt->bindValue(":level", $plot->levelName, SQLITE3_TEXT);
+		$stmt->bindValue(":X", $plot->X, SQLITE3_INTEGER);
+		$stmt->bindValue(":Z", $plot->Z, SQLITE3_INTEGER);
+		$result = $stmt->execute();
+		if($result === false) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * @param Plot $plot
+	 *
+	 * @return Plot
+	 */
+	public function getMergedBase(Plot $plot) : Plot {
+		$stmt = $this->sqlGetMergedBase;
+		$stmt->bindValue(":level", $plot->levelName, SQLITE3_TEXT);
+		$stmt->bindValue(":X", $plot->X, SQLITE3_INTEGER);
+		$stmt->bindValue(":Z", $plot->Z, SQLITE3_INTEGER);
+		$result = $stmt->execute();
+		if($result === false) {
+			return $plot; // base is the given plot
+		}
+		$val = $result->fetchArray(SQLITE3_ASSOC);
+		return $this->getPlot($val["level"], (int)$val["X1"], (int)$val["X2"]);
+	}
+
 
 	/**
 	 * @param string $levelName
