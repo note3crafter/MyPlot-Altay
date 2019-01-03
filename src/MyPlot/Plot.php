@@ -2,10 +2,21 @@
 declare(strict_types=1);
 namespace MyPlot;
 
+use pocketmine\math\AxisAlignedBB;
+
 class Plot
 {
 
-	public $levelName = "", $X = -0, $Z = -0, $name = "", $owner = "", $helpers = [], $denied = [], $biome = "PLAINS", $pvp = true, $id = -1;
+	/** @var string  */
+	public $levelName = "", $name = "", $owner = "", $biome = "PLAINS";
+	/** @var int  */
+	public $X = -0, $Z = -0, $id = -1, $merged = 0;
+	/** @var array  */
+	public $helpers = [], $denied = [];
+	/** @var AxisAlignedBB[] $aabb */
+	public $aabb = []; // first aabb will always be inclusive, others will always be exclusive
+	/** @var bool $pvp */
+	public $pvp = true;
 
 	/**
 	 * Plot constructor.
@@ -29,6 +40,7 @@ class Plot
 		$this->owner = $owner;
 		$this->helpers = $helpers;
 		$this->denied = $denied;
+		$this->aabb[] = MyPlot::getInstance()->getPlotBB($this);
 		$this->biome = strtoupper($biome);
 		$settings = MyPlot::getInstance()->getLevelSettings($levelName);
 		if($settings !== null) {
@@ -131,6 +143,31 @@ class Plot
 		return true;
 	}
 
+	/**
+	 * @api
+	 *
+	 * @param AxisAlignedBB $aabb
+	 *
+	 * @return void
+	 */
+	public function setBoundingBox(AxisAlignedBB $aabb) : void {
+		$this->aabb[0] = $aabb;
+	}
+
+	/**
+	 * @api
+	 *
+	 * @param AxisAlignedBB $aabb
+	 *
+	 * @return void
+	 */
+	public function excludeBoundingBox(AxisAlignedBB $aabb) : void {
+		$this->aabb[] = $aabb;
+	}
+
+	public function includeExcludedBox(AxisAlignedBB $aabb) : void {
+		// TODO:
+	}
 	/**
 	 * @return string
 	 */
