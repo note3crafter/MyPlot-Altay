@@ -9,10 +9,10 @@ use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\scheduler\Task;
 
-class ClearPlotTask extends Task {
+class ClearBorderTask extends Task {
 	/** @var MyPlot $plugin */
 	private $plugin;
-	private $plot, $level, $height, $bottomBlock, $plotFillBlock, $plotFloorBlock, $plotBeginPos, $xMax, $zMax, $maxBlocksPerTick, $pos;
+	private $plot, $level, $height, $plotWallBlock, $plotBeginPos, $xMax, $zMax, $maxBlocksPerTick, $pos;
 
 	/**
 	 * ClearPlotTask constructor.
@@ -31,18 +31,13 @@ class ClearPlotTask extends Task {
 		$this->xMax = $this->plotBeginPos->x + $plotSize;
 		$this->zMax = $this->plotBeginPos->z + $plotSize;
 		$this->height = $plotLevel->groundHeight;
-		$this->bottomBlock = $plotLevel->bottomBlock;
-		$this->plotFillBlock = $plotLevel->plotFillBlock;
-		$this->plotFloorBlock = $plotLevel->plotFloorBlock;
+		$this->plotWallBlock = $plotLevel->wallBlock;
 		$this->maxBlocksPerTick = $maxBlocksPerTick;
-		$this->pos = new Vector3($this->plotBeginPos->x, 0, $this->plotBeginPos->z);
+		$this->pos = new Vector3($this->plotBeginPos->x, $this->height + 1, $this->plotBeginPos->z);
 		$this->plugin = $plugin;
-		$plugin->getLogger()->debug("Clear Plot Task started at plot {$plot->X};{$plot->Z}");
+		$plugin->getLogger()->debug("Clear Border Task started at plot {$plot->X};{$plot->Z}");
 	}
 
-	/**
-	 * @param int $currentTick
-	 */
 	public function onRun(int $currentTick) : void {
 		foreach($this->level->getEntities() as $entity) {
 			if($this->plugin->getPlotBB($this->plot)->isVectorInXZ($entity)) {
@@ -55,16 +50,20 @@ class ClearPlotTask extends Task {
 		}
 		$blocks = 0;
 		while($this->pos->x < $this->xMax) {
+			if($this->pos->x > $this->plotBeginPos->x and $this->pos->x < $this->xMax) { // make sure its only the border
+				$this->pos->x++;
+				continue;
+			}
 			while($this->pos->z < $this->zMax) {
-				while($this->pos->y < $this->level->getWorldHeight()) {
-					if($this->pos->y === 0) {
-						$block = $this->bottomBlock;
-					}elseif($this->pos->y < $this->height) {
-						$block = $this->plotFillBlock;
-					}elseif($this->pos->y === $this->height) {
-						$block = $this->plotFloorBlock;
+				if($this->pos->z > $this->plotBeginPos->z and $this->pos->z < $this->zMax) { // make sure its only the border
+					$this->pos->z++;
+					continue;
+				}
+				while($this->pos->y <= $this->level->getWorldHeight()) {
+					if($this->pos->y === $this->height + 1) {
+						$block = $this->plotWallBlock;
 					}else{
-						$block = Block::get(0);
+						$block = Block::get(Block::AIR);
 					}
 					$this->level->setBlock($this->pos, $block, false, false);
 					$blocks++;
@@ -74,20 +73,10 @@ class ClearPlotTask extends Task {
 					}
 					$this->pos->y++;
 				}
-				$this->pos->y = 0;
 				$this->pos->z++;
 			}
-			$this->pos->z = $this->plotBeginPos->z;
 			$this->pos->x++;
 		}
-		foreach($this->level->getTiles() as $tile) {
-			if(($plot = $this->plugin->getPlotByPosition($tile)) != null) {
-				if($plot->X === $this->plotBeginPos->x and $plot->Z === $this->plotBeginPos->z) {
-					$tile->close();
-				}
-			}
-		}
-		$this->plugin->getScheduler()->scheduleDelayedTask(new ClearBorderTask($this->plugin, $this->plot, $this->maxBlocksPerTick), 1);
-		$this->plugin->getLogger()->debug("Clear Plot task completed at {$this->plotBeginPos->x};{$this->plotBeginPos->z}");
+		$this->plugin->getLogger()->debug("Clear Border task completed at {$this->plotBeginPos->x};{$this->plotBeginPos->z}");
 	}
 }
