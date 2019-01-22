@@ -32,7 +32,7 @@ class HomeSubCommand extends SubCommand
 		    $selectedName = $sender->getName();
 			$plotNumber = 1;
 		}elseif(isset($args[0]) and ($selected = $this->getPlugin()->getServer()->getOfflinePlayer($args[0])->getPlayer() ?? $this->getPlugin()->getServer()->getOfflinePlayer($args[0])) !== null) {
-			$selectedName = $selected->getName();
+			$selectedName = ctype_lower($selected->getName()) ? $args[0] : $selected->getName();
 			if(!isset($args[1]) or !is_numeric($args[1]))
 				return false;
 			$plotNumber = (int) $args[1];
@@ -40,10 +40,10 @@ class HomeSubCommand extends SubCommand
 			return false;
 		}
 		if($selected instanceof OfflinePlayer and !isset($args[2])) {
-			$sender->sendMessage(TextFormat::RED . $this->translateString("home.error"));
-			return true;
+			$levelName = "";
+		}else{
+			$levelName = $args[2] ?? $selected->getLevel()->getFolderName();
 		}
-		$levelName = $args[2] ?? $selected->getLevel()->getFolderName();
 		$plots = $this->getPlugin()->getPlotsOfPlayer($selectedName, $levelName);
 		if(empty($plots)) {
 			$sender->sendMessage(TextFormat::RED . $this->translateString("home.noplots"));
