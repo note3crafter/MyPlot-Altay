@@ -4,6 +4,7 @@ namespace MyPlot\subcommand;
 
 use MyPlot\Plot;
 use pocketmine\command\CommandSender;
+use pocketmine\OfflinePlayer;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat;
 
@@ -30,13 +31,17 @@ class HomeSubCommand extends SubCommand
 			$selected = $sender;
 		    $selectedName = $sender->getName();
 			$plotNumber = 1;
-		}elseif(isset($args[0]) and ($selected = $this->getPlugin()->getServer()->getPlayer($args[0])) !== null) {
+		}elseif(isset($args[0]) and ($selected = $this->getPlugin()->getServer()->getOfflinePlayer($args[0])->getPlayer() ?? $this->getPlugin()->getServer()->getOfflinePlayer($args[0])) !== null) {
 			$selectedName = $selected->getName();
 			if(!isset($args[1]) or !is_numeric($args[1]))
 				return false;
 			$plotNumber = (int) $args[1];
 		}else{
 			return false;
+		}
+		if($selected instanceof OfflinePlayer and !isset($args[2])) {
+			$sender->sendMessage(TextFormat::RED . $this->translateString("home.error"));
+			return true;
 		}
 		$levelName = $args[2] ?? $selected->getLevel()->getFolderName();
 		$plots = $this->getPlugin()->getPlotsOfPlayer($selectedName, $levelName);
