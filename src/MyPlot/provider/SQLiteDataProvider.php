@@ -10,7 +10,7 @@ class SQLiteDataProvider extends DataProvider
 	/** @var \SQLite3 $db */
 	private $db;
 	/** @var \SQLite3Stmt */
-	private $sqlGetPlot, $sqlSavePlot, $sqlSavePlotById, $sqlRemovePlot, $sqlRemovePlotById, $sqlGetPlotsByOwner, $sqlGetPlotsByOwnerAndLevel, $sqlGetExistingXZ, $sqlMergePlots, $sqlUnmergeByPlots, $sqlGetMergedBase;
+	private $sqlGetPlot, $sqlSavePlot, $sqlSavePlotById, $sqlRemovePlot, $sqlRemovePlotById, $sqlGetPlotsByOwner, $sqlGetPlotsByOwnerAndLevel, $sqlGetExistingXZ, $sqlMergePlots, $sqlUnmergeByPlots, $sqlGetMergedBase, $sqlGetMergedPlots;
 
 	/**
 	 * SQLiteDataProvider constructor.
@@ -50,6 +50,7 @@ class SQLiteDataProvider extends DataProvider
 		$this->sqlMergePlots = $this->db->prepare("INSERT OR REPLACE INTO merges (level, X1, Z1, X2, Z2) VALUES (:level, :x1, :z1, :x2, :z2)");
 		$this->sqlUnmergeByPlots = $this->db->prepare("DELETE FROM merges WHERE level = :level AND X2 = :X AND Z2 = :Z;");
 		$this->sqlGetMergedBase = $this->db->prepare("SELECT * FROM merges WHERE level = :level AND X2 = :X and Z2 = :Z;");
+		$this->sqlGetMergedPlots = $this->db->prepare("SELECT * FROM merges WHERE level = :level AND X1 = :X and Z1 = :Z;");
 		$this->plugin->getLogger()->debug("SQLite data provider registered");
 	}
 
@@ -179,24 +180,44 @@ class SQLiteDataProvider extends DataProvider
 	}
 
 	/**
-	 * @param Plot $plotA
-	 * @param Plot $plotB
+	 * @param Plot $base
+	 * @param Plot[] $plots
 	 *
 	 * @return bool
 	 */
-	public function addMergedPlot(Plot $plotA, Plot $plotB) : bool {
-		if($plotA->levelName !== $plotB->levelName)
-			return false;
-		$stmt = $this->sqlMergePlots;
-		$stmt->bindValue(":level",$plotA->levelName, SQLITE3_TEXT);
-		$stmt->bindValue(":x1", $plotA->X, SQLITE3_INTEGER);
-		$stmt->bindValue(":z1", $plotA->Z, SQLITE3_INTEGER);
-		$stmt->bindValue(":x2", $plotB->X, SQLITE3_INTEGER);
-		$stmt->bindValue(":z2", $plotB->Z, SQLITE3_INTEGER);
-		$stmt->reset();
-		$result = $stmt->execute();
-		if($result === false) {
-			return false;
+	public function mergePlots(Plot $base, Plot ...$plots) : bool {
+		foreach($plots as $plot) {
+			$stmt = $this->sqlMergePlots;
+			$stmt->bindValue(":level",$base->levelName, SQLITE3_TEXT);
+			$stmt->bindValue(":x1", $base->X, SQLITE3_INTEGER);
+			$stmt->bindValue(":z1", $base->Z, SQLITE3_INTEGER);
+			$stmt->bindValue(":x2", $plot->X, SQLITE3_INTEGER);
+			$stmt->bindValue(":z2", $plot->Z, SQLITE3_INTEGER);
+			$stmt->reset();
+			$result = $stmt->execute();
+			if($result === false) {
+				continue;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * @param Plot[] $plots
+	 *
+	 * @return bool
+	 */
+	public function unMergePlots(Plot ...$plots) : bool {
+		foreach($plots as $plot) {
+			$stmt = $this->sqlUnmergeByPlots;
+			$stmt->bindValue(":level", $plot->levelName, SQLITE3_TEXT);
+			$stmt->bindValue(":X", $plot->X, SQLITE3_INTEGER);
+			$stmt->bindValue(":Z", $plot->Z, SQLITE3_INTEGER);
+			$stmt->reset();
+			$result = $stmt->execute();
+			if($result === false) {
+				continue;
+			}
 		}
 		return true;
 	}
@@ -204,18 +225,24 @@ class SQLiteDataProvider extends DataProvider
 	/**
 	 * @param Plot $plot
 	 *
-	 * @return bool
+	 * @return Plot[]
 	 */
-	public function removeMergedPlot(Plot $plot) : bool {
-		$stmt = $this->sqlUnmergeByPlots;
+	public function getMergedPlots(Plot $plot) : array {
+		/** @var Plot[] $plots */
+		$plots = [];
+		$stmt = $this->sqlGetMergedPlots;
 		$stmt->bindValue(":level", $plot->levelName, SQLITE3_TEXT);
 		$stmt->bindValue(":X", $plot->X, SQLITE3_INTEGER);
 		$stmt->bindValue(":Z", $plot->Z, SQLITE3_INTEGER);
+		$stmt->reset();
 		$result = $stmt->execute();
 		if($result === false) {
-			return false;
+			return $this->getMergedPlots($this->getMergedBase($plot)); // recursion?
 		}
-		return true;
+		while($val = $result->fetchArray(SQLITE3_ASSOC)) {
+			$plots[] = $this->getPlot($val["level"], (int)$val["X1"], (int)$val["X2"]);
+		}
+		return $plots;
 	}
 
 	/**
@@ -228,6 +255,7 @@ class SQLiteDataProvider extends DataProvider
 		$stmt->bindValue(":level", $plot->levelName, SQLITE3_TEXT);
 		$stmt->bindValue(":X", $plot->X, SQLITE3_INTEGER);
 		$stmt->bindValue(":Z", $plot->Z, SQLITE3_INTEGER);
+		$stmt->reset();
 		$result = $stmt->execute();
 		if($result === false) {
 			return $plot; // base is the given plot
@@ -235,7 +263,6 @@ class SQLiteDataProvider extends DataProvider
 		$val = $result->fetchArray(SQLITE3_ASSOC);
 		return $this->getPlot($val["level"], (int)$val["X1"], (int)$val["X2"]);
 	}
-
 
 	/**
 	 * @param string $levelName

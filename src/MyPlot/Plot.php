@@ -2,8 +2,6 @@
 declare(strict_types=1);
 namespace MyPlot;
 
-use pocketmine\math\AxisAlignedBB;
-
 class Plot
 {
 
@@ -140,31 +138,6 @@ class Plot
 		return true;
 	}
 
-	/**
-	 * @api
-	 *
-	 * @param AxisAlignedBB $aabb
-	 *
-	 * @return void
-	 */
-	public function setBoundingBox(AxisAlignedBB $aabb) : void {
-		$this->aabb[0] = $aabb;
-	}
-
-	/**
-	 * @api
-	 *
-	 * @param AxisAlignedBB $aabb
-	 *
-	 * @return void
-	 */
-	public function excludeBoundingBox(AxisAlignedBB $aabb) : void {
-		$this->aabb[] = $aabb;
-	}
-
-	public function includeExcludedBox(AxisAlignedBB $aabb) : void {
-		// TODO:
-	}
 	/**
 	 * @return string
 	 */
