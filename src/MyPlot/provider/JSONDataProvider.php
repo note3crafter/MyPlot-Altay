@@ -34,7 +34,8 @@ class JSONDataProvider extends DataProvider {
 		$plots[$plot->id] = ["level" => $plot->levelName, "x" => $plot->X, "z" => $plot->Z, "name" => $plot->name, "owner" => $plot->owner, "helpers" => $plot->helpers, "denied" => $plot->denied, "biome" => $plot->biome];
 		$this->json->set("plots", $plots);
 		$this->cachePlot($plot);
-		return $this->json->save();
+		$this->json->save();
+		return true;
 	}
 
 	/**
@@ -47,7 +48,8 @@ class JSONDataProvider extends DataProvider {
 		unset($plots[$plot->id]);
 		$this->json->set("plots", $plots);
 		$this->cachePlot($plot);
-		return $this->json->save();
+		$this->json->save();
+		return true;
 	}
 
 	/**

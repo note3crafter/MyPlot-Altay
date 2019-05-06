@@ -34,7 +34,8 @@ class YAMLDataProvider extends DataProvider {
 		$plots[$plot->id] = ["level" => $plot->levelName, "x" => $plot->X, "z" => $plot->Z, "name" => $plot->name, "owner" => $plot->owner, "helpers" => $plot->helpers, "denied" => $plot->denied, "biome" => $plot->biome, "pvp" => $plot->pvp];
 		$this->yaml->set("plots", $plots);
 		$this->cachePlot($plot);
-		return $this->yaml->save();
+		$this->yaml->save();
+		return true;
 	}
 
 	/**
@@ -47,7 +48,8 @@ class YAMLDataProvider extends DataProvider {
 		unset($plots[$plot->id]);
 		$this->yaml->set("plots", $plots);
 		$this->cachePlot($plot);
-		return $this->yaml->save();
+		$this->yaml->save();
+		return true;
 	}
 
 	/**

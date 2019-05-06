@@ -4,9 +4,10 @@ namespace MyPlot\events;
 
 use MyPlot\Plot;
 use pocketmine\event\Cancellable;
+use pocketmine\event\CancellableTrait;
 
 class MyPlotDisposeEvent extends MyPlotPlotEvent implements Cancellable {
-	public static $handlerList = null;
+	use CancellableTrait;
 
 	/**
 	 * MyPlotClearEvent constructor.

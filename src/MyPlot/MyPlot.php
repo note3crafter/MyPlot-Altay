@@ -24,7 +24,7 @@ use MyPlot\task\ClearPlotTask;
 use onebone\economyapi\EconomyAPI;
 use pocketmine\block\Block;
 use pocketmine\event\level\LevelLoadEvent;
-use pocketmine\lang\BaseLang;
+use pocketmine\lang\Language;
 use pocketmine\level\biome\Biome;
 use pocketmine\level\format\Chunk;
 use pocketmine\level\generator\GeneratorManager;
@@ -51,7 +51,7 @@ class MyPlot extends PluginBase
 	private $dataProvider = null;
 	/** @var EconomyProvider $economyProvider */
 	private $economyProvider = null;
-	/** @var BaseLang $baseLang */
+	/** @var Language $baseLang */
 	private $baseLang = null;
 
 	/**
@@ -66,9 +66,9 @@ class MyPlot extends PluginBase
 	 *
 	 * @api
 	 *
-	 * @return BaseLang
+	 * @return Language
 	 */
-	public function getLanguage() : BaseLang {
+	public function getLanguage() : Language {
 		return $this->baseLang;
 	}
 
@@ -152,7 +152,8 @@ class MyPlot extends PluginBase
 	public function generateLevel(string $levelName, string $generator = "myplot", array $settings = []) : bool {
 		$ev = new MyPlotGenerationEvent($levelName, $generator, $settings);
 		$ev->call();
-		if($ev->isCancelled() or $this->getServer()->isLevelGenerated($levelName)) {
+		$levelManager = $this->getServer()->getLevelManager();
+		if($ev->isCancelled() or $levelManager->isLevelGenerated($levelName)) {
 			return false;
 		}
 		$generator = GeneratorManager::getGenerator($generator);
@@ -165,8 +166,8 @@ class MyPlot extends PluginBase
 		}, ARRAY_FILTER_USE_KEY);
 		new Config($this->getDataFolder()."worlds".DIRECTORY_SEPARATOR.$levelName.".yml", Config::YAML, $default);
 		$settings = ["preset" => json_encode($settings)];
-		$return = $this->getServer()->generateLevel($levelName, null, $generator, $settings);
-		$level = $this->getServer()->getLevelByName($levelName);
+		$return = $levelManager->generateLevel($levelName, null, $generator, $settings);
+		$level = $levelManager->getLevelByName($levelName);
 		if($level !== null)
 			$level->setSpawnLocation(new Vector3(0,(int)$this->getConfig()->getNested("DefaultWorld.GroundHeight", 64) + 1,0));
 		return $return;
@@ -271,7 +272,7 @@ class MyPlot extends PluginBase
 		$totalSize = $plotSize + $roadWidth;
 		$x = $totalSize * $plot->X;
 		$z = $totalSize * $plot->Z;
-		$level = $this->getServer()->getLevelByName($plot->levelName);
+		$level = $this->getServer()->getLevelManager()->getLevelByName($plot->levelName);
 		return new Position($x, $plotLevel->groundHeight, $z, $level);
 	}
 
@@ -394,7 +395,7 @@ class MyPlot extends PluginBase
 		}
 		$plot = $ev->getPlot();
 		$maxBlocksPerTick = $ev->getMaxBlocksPerTick();
-		foreach($this->getServer()->getLevelByName($plot->levelName)->getEntities() as $entity) {
+		foreach($this->getServer()->getLevelManager()->getLevelByName($plot->levelName)->getEntities() as $entity) {
 			if($this->getPlotBB($plot)->isVectorInXZ($entity)) {
 				if(!$entity instanceof Player) {
 					$entity->flagForDespawn();
@@ -523,7 +524,7 @@ class MyPlot extends PluginBase
 		if($plotLevel === null) {
 			return false;
 		}
-		$level = $this->getServer()->getLevelByName($plot->levelName);
+		$level = $this->getServer()->getLevelManager()->getLevelByName($plot->levelName);
 		$pos = $this->getPlotPosition($plot);
 		$plotSize = $plotLevel->plotSize;
 		$xMax = $pos->x + $plotSize;
@@ -658,7 +659,7 @@ class MyPlot extends PluginBase
 	 */
 	public function getPlotChunks(Plot $plot) : array {
 		$plotLevel = $this->getLevelSettings($plot->levelName);
-		$level = $this->getServer()->getLevelByName($plot->levelName);
+		$level = $this->getServer()->getLevelManager()->getLevelByName($plot->levelName);
 		$pos = $this->getPlotPosition($plot);
 		$plotSize = $plotLevel->plotSize;
 		$xMax = ($pos->x + $plotSize) >> 4;
@@ -752,8 +753,8 @@ class MyPlot extends PluginBase
 		$this->getLogger()->debug(TF::BOLD . "Loading Languages");
 		// Loading Languages
 		/** @var string $lang */
-		$lang = $this->getConfig()->get("language", BaseLang::FALLBACK_LANGUAGE);
-		$this->baseLang = new BaseLang($lang, $this->getFile() . "resources/");
+		$lang = $this->getConfig()->get("language", Language::FALLBACK_LANGUAGE);
+		$this->baseLang = new Language($lang, $this->getFile() . "resources/");
 		$this->getLogger()->debug(TF::BOLD . "Loading Data Provider settings");
 		// Initialize DataProvider
 		/** @var int $cacheSize */
@@ -824,7 +825,7 @@ class MyPlot extends PluginBase
 		$eventListener = new EventListener($this);
 		$this->getServer()->getPluginManager()->registerEvents($eventListener, $this);
 		$this->getLogger()->debug(TF::BOLD . "Registering Loaded Levels");
-		foreach($this->getServer()->getLevels() as $level) {
+		foreach($this->getServer()->getLevelManager()->getLevels() as $level) {
 			$eventListener->onLevelLoad(new LevelLoadEvent($level));
 		}
 		$this->getLogger()->debug(TF::BOLD.TF::GREEN."Enabled!");
