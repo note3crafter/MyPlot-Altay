@@ -19,6 +19,7 @@ use pocketmine\event\level\LevelUnloadEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerMoveEvent;
+use pocketmine\level\Level;
 use pocketmine\Player;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
@@ -205,7 +206,10 @@ class EventListener implements Listener
 		if($event->isCancelled()) {
 			return;
 		}
-		$levelName = $event->getEntity()->getLevel()->getFolderName();
+		$level = $event->getEntity()->getLevel();
+		if(!$level instanceof Level)
+			return;
+		$levelName = $level->getFolderName();
 		if(!$this->plugin->isLevelLoaded($levelName))
 			return;
 		$settings = $this->plugin->getLevelSettings($levelName);
@@ -242,8 +246,6 @@ class EventListener implements Listener
 	 * @param PlayerMoveEvent $event
 	 */
 	public function onPlayerMove(PlayerMoveEvent $event) : void {
-		if(!$this->plugin->getConfig()->get("ShowPlotPopup", true))
-			return;
 		$levelName = $event->getPlayer()->getLevel()->getFolderName();
 		if(!$this->plugin->isLevelLoaded($levelName))
 			return;
@@ -263,6 +265,8 @@ class EventListener implements Listener
 			if($event->isCancelled()) {
 				return;
 			}
+			if(!$this->plugin->getConfig()->get("ShowPlotPopup", true))
+				return;
 			$popup = $this->plugin->getLanguage()->translateString("popup", [TextFormat::GREEN . $plot]);
 			if($plot->owner !== "") {
 				$owner = TextFormat::GREEN . $plot->owner;

@@ -166,7 +166,11 @@ class MyPlot extends PluginBase
 		}, ARRAY_FILTER_USE_KEY);
 		new Config($this->getDataFolder()."worlds".DIRECTORY_SEPARATOR.$levelName.".yml", Config::YAML, $default);
 		$settings = ["preset" => json_encode($settings)];
-		return $this->getServer()->generateLevel($levelName, null, $generator, $settings);
+		$return = $this->getServer()->generateLevel($levelName, null, $generator, $settings);
+		$level = $this->getServer()->getLevelByName($levelName);
+		if($level !== null)
+			$level->setSpawnLocation(new Vector3(0,(int)$this->getConfig()->getNested("DefaultWorld.GroundHeight", 64) + 1,0));
+		return $return;
 	}
 
 	/**
@@ -484,7 +488,7 @@ class MyPlot extends PluginBase
 				}
 			}
 		}
-		if($this->getConfig()->get("FastClearing", false)){
+		if($this->getConfig()->get("FastClearing", false)) {
 			/** @var WorldStyler $styler */
 			$styler = $this->getServer()->getPluginManager()->getPlugin("WorldStyler");
 			$plotLevel = $this->getLevelSettings($plot->levelName);
@@ -616,15 +620,15 @@ class MyPlot extends PluginBase
 				if(!in_array($index, $chunkIndexes)) {
 					$chunkIndexes[] = $index;
 				}
-				Level::getXZ($index, $plot->X, $plot->Z);
-				$chunk = $level->getChunk($plot->X, $plot->Z, true);
+				Level::getXZ($index, $cx, $cz);
+				$chunk = $level->getChunk($cx, $cz, true);
 				$chunk->setBiomeId($x, $z, $biome->getId());
 			}
 		}
 		foreach($chunkIndexes as $index) {
-			Level::getXZ($index, $plot->X, $plot->Z);
-			$chunk = $level->getChunk($plot->X, $plot->Z, true);
-			foreach($level->getViewersForPosition(new Vector3($plot->X, 0, $plot->Z)) as $player) {
+			Level::getXZ($index, $cx, $cz);
+			$chunk = $level->getChunk($cx, $cz, true);
+			foreach($level->getViewersForPosition(new Vector3($cx, 0, $cz)) as $player) {
 				$player->onChunkChanged($chunk);
 			}
 		}
