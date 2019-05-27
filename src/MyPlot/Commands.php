@@ -42,11 +42,9 @@ class Commands extends BaseCommand implements PluginIdentifiableCommand
 	 * @param MyPlot $plugin
 	 */
 	public function __construct(MyPlot $plugin) {
-		parent::__construct($plugin->getLanguage()->get("command.name"));
 		$this->plugin = $plugin;
+		parent::__construct($plugin->getLanguage()->get("command.name"), $plugin->getLanguage()->get("command.desc"), [$plugin->getLanguage()->get("command.alias")]);
 		$this->setPermission("myplot.command");
-		$this->setAliases([$plugin->getLanguage()->get("command.alias")]);
-		$this->setDescription($plugin->getLanguage()->get("command.desc"));
 		$this->setUsage($plugin->getLanguage()->get("command.usage"));
 	}
 
@@ -68,7 +66,18 @@ class Commands extends BaseCommand implements PluginIdentifiableCommand
 	 * @param string $name
 	 */
 	public function unloadSubCommand(string $name) : void {
-		// TODO
+		$ref = new \ReflectionClass($this);
+		$prop = $ref->getProperty("subCommands");
+		$prop->setAccessible(true);
+		/** @var SubCommand[] $value */
+		$value = $prop->getValue($this);
+		if(isset($value[$name])) {
+			$command = $value[$name];
+			$alias = $command->getAlias();
+			unset($value[$alias]);
+		}
+		unset($value[$name]);
+		$prop->setValue($this, $value);
 	}
 
 	/**
@@ -113,7 +122,7 @@ class Commands extends BaseCommand implements PluginIdentifiableCommand
 			return;
 		}
 		/** @noinspection PhpParamsInspection */
-		$temp = new HelpSubCommand($this->getPlugin(), "help", $this);
+		$temp = new HelpSubCommand($this->plugin, "help", $this);
 		if($temp->canUse($sender))
 			$temp->execute($sender, []);
 		return;
