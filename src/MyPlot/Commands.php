@@ -28,19 +28,13 @@ use MyPlot\subcommand\SubCommand;
 use MyPlot\subcommand\UnDenySubCommand;
 use MyPlot\subcommand\WarpSubCommand;
 use pocketmine\command\CommandSender;
-use pocketmine\command\PluginCommand;
 use pocketmine\command\PluginIdentifiableCommand;
 use pocketmine\plugin\Plugin;
-use pocketmine\utils\TextFormat;
 
 class Commands extends BaseCommand implements PluginIdentifiableCommand
 {
 	/** @var MyPlot $plugin */
 	private $plugin;
-	/** @var SubCommand[] $subCommands */
-	private $subCommands = [];
-	/** @var SubCommand[] $aliasSubCommands */
-	private $aliasSubCommands = [];
 
 	/**
 	 * Commands constructor.
@@ -60,7 +54,7 @@ class Commands extends BaseCommand implements PluginIdentifiableCommand
 	 * @return SubCommand[]
 	 */
 	public function getCommands() : array {
-		return $this->subCommands;
+		return $this->getSubCommands();
 	}
 
 	/**
@@ -68,21 +62,13 @@ class Commands extends BaseCommand implements PluginIdentifiableCommand
 	 */
 	public function loadSubCommand(SubCommand $command) : void {
 		$this->registerSubCommand($command);
-		$this->subCommands[$command->getName()] = $command;
-		if($command->getAlias() != "") {
-			$this->aliasSubCommands[$command->getAlias()] = $command;
-		}
 	}
 
 	/**
 	 * @param string $name
 	 */
 	public function unloadSubCommand(string $name) : void {
-		$subcommand = $this->subCommands[$name] ?? $this->aliasSubCommands[$name] ?? null;
-		if($subcommand !== null) {
-			unset($this->subCommands[$subcommand->getName()]);
-			unset($this->aliasSubCommands[$subcommand->getAlias()]);
-		}
+		// TODO
 	}
 
 	/**
@@ -126,29 +112,10 @@ class Commands extends BaseCommand implements PluginIdentifiableCommand
 			$sender->sendMessage($this->getPlugin()->getLanguage()->get("plugin.disabled"));
 			return;
 		}
-		if(!isset($args[0])) {
-			$args[0] = "help";
-		}
-		$subCommand = strtolower(array_shift($args));
-		if(isset($this->subCommands[$subCommand])) {
-			$command = $this->subCommands[$subCommand];
-		}elseif(isset($this->aliasSubCommands[$subCommand])) {
-			$command = $this->aliasSubCommands[$subCommand];
-		}else{
-			/** @noinspection PhpUndefinedMethodInspection */
-			$sender->sendMessage(TextFormat::RED . $this->getPlugin()->getLanguage()->get("command.unknown"));
-			return;
-		}
-		if($command->canUse($sender)) {
-			if(!$command->execute($sender, $args)) {
-				/** @noinspection PhpUndefinedMethodInspection */
-				$usage = $this->getPlugin()->getLanguage()->translateString("subcommand.usage", [$command->getUsage()]);
-				$sender->sendMessage($usage);
-			}
-		}else{
-			/** @noinspection PhpUndefinedMethodInspection */
-			$sender->sendMessage(TextFormat::RED . $this->getPlugin()->getLanguage()->get("command.unknown"));
-		}
+		/** @noinspection PhpParamsInspection */
+		$temp = new HelpSubCommand($this->getPlugin(), "help", $this);
+		if($temp->canUse($sender))
+			$temp->execute($sender, []);
 		return;
 	}
 

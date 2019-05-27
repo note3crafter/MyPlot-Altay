@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace MyPlot\subcommand;
 
+use CortexPE\Commando\args\RawStringArgument;
 use pocketmine\command\CommandSender;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat;
@@ -56,6 +57,8 @@ class WarpSubCommand extends SubCommand
 	 * This is where all the arguments, permissions, sub-commands, etc would be registered
 	 */
 	protected function prepare() : void {
+		$this->registerArgument(0, new RawStringArgument("id", false));
+		$this->registerArgument(1, new RawStringArgument("world", true));
 		// TODO: Implement prepare() method.
 	}
 

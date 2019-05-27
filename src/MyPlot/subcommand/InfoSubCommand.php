@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace MyPlot\subcommand;
 
+use CortexPE\Commando\args\IntegerArgument;
+use CortexPE\Commando\args\TargetArgument;
 use MyPlot\Plot;
 use pocketmine\command\CommandSender;
 use pocketmine\Player;
@@ -71,6 +73,8 @@ class InfoSubCommand extends SubCommand
 	 * This is where all the arguments, permissions, sub-commands, etc would be registered
 	 */
 	protected function prepare() : void {
+		$this->registerArgument(0, new TargetArgument("player", true));
+		$this->registerArgument(1, new IntegerArgument("number", true));
 		// TODO: Implement prepare() method.
 	}
 

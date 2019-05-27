@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace MyPlot\subcommand;
 
+use CortexPE\Commando\args\RawStringArgument;
 use pocketmine\command\CommandSender;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat;
@@ -48,6 +49,7 @@ class NameSubCommand extends SubCommand
 	 * This is where all the arguments, permissions, sub-commands, etc would be registered
 	 */
 	protected function prepare() : void {
+		$this->registerArgument(0, new RawStringArgument("name", false));
 		// TODO: Implement prepare() method.
 	}
 

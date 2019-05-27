@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace MyPlot;
 
+use CortexPE\Commando\PacketHooker;
 use EssentialsPE\Loader;
 use muqsit\worldstyler\shapes\Cuboid;
 use muqsit\worldstyler\WorldStyler;
@@ -785,9 +786,6 @@ class MyPlot extends PluginBase
 			$this->getConfig()->set("FastClearing", false);
 			$this->getLogger()->info(TF::BOLD . "WorldStyler not found. Legacy clearing will be used.");
 		}
-		$this->getLogger()->debug(TF::BOLD . "Loading MyPlot Commands");
-		// Register command
-		$this->getServer()->getCommandMap()->register("myplot", new Commands($this));
 	}
 
 	public function onEnable() : void {
@@ -795,6 +793,11 @@ class MyPlot extends PluginBase
 		if($this->isDisabled()) {
 			return;
 		}
+		$this->getLogger()->debug(TF::BOLD . "Loading MyPlot Commands");
+		if(!PacketHooker::isRegistered()) {
+			PacketHooker::register($this);
+		}
+		$this->getServer()->getCommandMap()->register("myplot", new Commands($this));
 		$this->getLogger()->debug(TF::BOLD . "Loading economy settings");
 		// Initialize EconomyProvider
 		if($this->getConfig()->get("UseEconomy", false) === true) {
