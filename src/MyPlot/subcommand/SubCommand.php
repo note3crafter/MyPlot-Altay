@@ -2,12 +2,13 @@
 declare(strict_types=1);
 namespace MyPlot\subcommand;
 
+use CortexPE\Commando\BaseSubCommand;
 use MyPlot\MyPlot;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginIdentifiableCommand;
 use pocketmine\plugin\Plugin;
 
-abstract class SubCommand implements PluginIdentifiableCommand
+abstract class SubCommand extends BaseSubCommand implements PluginIdentifiableCommand
 {
 	/** @var MyPlot $plugin */
     private $plugin;
@@ -21,6 +22,7 @@ abstract class SubCommand implements PluginIdentifiableCommand
 	public function __construct(MyPlot $plugin, string $name) {
         $this->plugin = $plugin;
         $this->name = $name;
+        parent::__construct($name, $this->getDescription(), $this->getAliases());
     }
 
     /**

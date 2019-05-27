@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace MyPlot;
 
+use CortexPE\Commando\args\BaseArgument;
+use CortexPE\Commando\BaseCommand;
 use MyPlot\subcommand\AddHelperSubCommand;
 use MyPlot\subcommand\AutoSubCommand;
 use MyPlot\subcommand\BiomeSubCommand;
@@ -27,10 +29,14 @@ use MyPlot\subcommand\UnDenySubCommand;
 use MyPlot\subcommand\WarpSubCommand;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginCommand;
+use pocketmine\command\PluginIdentifiableCommand;
+use pocketmine\plugin\Plugin;
 use pocketmine\utils\TextFormat;
 
-class Commands extends PluginCommand
+class Commands extends BaseCommand implements PluginIdentifiableCommand
 {
+	/** @var MyPlot $plugin */
+	private $plugin;
 	/** @var SubCommand[] $subCommands */
 	private $subCommands = [];
 	/** @var SubCommand[] $aliasSubCommands */
@@ -42,11 +48,48 @@ class Commands extends PluginCommand
 	 * @param MyPlot $plugin
 	 */
 	public function __construct(MyPlot $plugin) {
-		parent::__construct($plugin->getLanguage()->get("command.name"), $plugin);
+		parent::__construct($plugin->getLanguage()->get("command.name"));
+		$this->plugin = $plugin;
 		$this->setPermission("myplot.command");
 		$this->setAliases([$plugin->getLanguage()->get("command.alias")]);
 		$this->setDescription($plugin->getLanguage()->get("command.desc"));
 		$this->setUsage($plugin->getLanguage()->get("command.usage"));
+	}
+
+	/**
+	 * @return SubCommand[]
+	 */
+	public function getCommands() : array {
+		return $this->subCommands;
+	}
+
+	/**
+	 * @param SubCommand $command
+	 */
+	public function loadSubCommand(SubCommand $command) : void {
+		$this->registerSubCommand($command);
+		$this->subCommands[$command->getName()] = $command;
+		if($command->getAlias() != "") {
+			$this->aliasSubCommands[$command->getAlias()] = $command;
+		}
+	}
+
+	/**
+	 * @param string $name
+	 */
+	public function unloadSubCommand(string $name) : void {
+		$subcommand = $this->subCommands[$name] ?? $this->aliasSubCommands[$name] ?? null;
+		if($subcommand !== null) {
+			unset($this->subCommands[$subcommand->getName()]);
+			unset($this->aliasSubCommands[$subcommand->getAlias()]);
+		}
+	}
+
+	/**
+	 * This is where all the arguments, permissions, sub-commands, etc would be registered
+	 */
+	protected function prepare() : void {
+		$plugin = $this->plugin;
 		$this->loadSubCommand(new HelpSubCommand($plugin, "help", $this));
 		$this->loadSubCommand(new ClaimSubCommand($plugin, "claim"));
 		$this->loadSubCommand(new GenerateSubCommand($plugin, "generate"));
@@ -73,45 +116,15 @@ class Commands extends PluginCommand
 	}
 
 	/**
-	 * @return SubCommand[]
-	 */
-	public function getCommands() : array {
-		return $this->subCommands;
-	}
-
-	/**
-	 * @param SubCommand $command
-	 */
-	public function loadSubCommand(SubCommand $command) : void {
-		$this->subCommands[$command->getName()] = $command;
-		if($command->getAlias() != "") {
-			$this->aliasSubCommands[$command->getAlias()] = $command;
-		}
-	}
-
-	/**
-	 * @param string $name
-	 */
-	public function unloadSubCommand(string $name) : void {
-		$subcommand = $this->subCommands[$name] ?? $this->aliasSubCommands[$name] ?? null;
-		if($subcommand !== null) {
-			unset($this->subCommands[$subcommand->getName()]);
-			unset($this->aliasSubCommands[$subcommand->getAlias()]);
-		}
-	}
-
-	/**
 	 * @param CommandSender $sender
-	 * @param string $alias
-	 * @param string[] $args
-	 *
-	 * @return bool
+	 * @param string $aliasUsed
+	 * @param BaseArgument[] $args
 	 */
-	public function execute(CommandSender $sender, string $alias, array $args) : bool {
+	public function onRun(CommandSender $sender, string $aliasUsed, array $args) : void {
 		if($this->getPlugin()->isDisabled()) {
 			/** @noinspection PhpUndefinedMethodInspection */
 			$sender->sendMessage($this->getPlugin()->getLanguage()->get("plugin.disabled"));
-			return true;
+			return;
 		}
 		if(!isset($args[0])) {
 			$args[0] = "help";
@@ -124,7 +137,7 @@ class Commands extends PluginCommand
 		}else{
 			/** @noinspection PhpUndefinedMethodInspection */
 			$sender->sendMessage(TextFormat::RED . $this->getPlugin()->getLanguage()->get("command.unknown"));
-			return true;
+			return;
 		}
 		if($command->canUse($sender)) {
 			if(!$command->execute($sender, $args)) {
@@ -136,6 +149,13 @@ class Commands extends PluginCommand
 			/** @noinspection PhpUndefinedMethodInspection */
 			$sender->sendMessage(TextFormat::RED . $this->getPlugin()->getLanguage()->get("command.unknown"));
 		}
-		return true;
+		return;
+	}
+
+	/**
+	 * @return Plugin
+	 */
+	public function getPlugin() : Plugin {
+		return $this->plugin;
 	}
 }

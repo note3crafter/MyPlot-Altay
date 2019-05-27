@@ -6,7 +6,8 @@ use pocketmine\command\CommandSender;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat;
 
-class PvpSubCommand extends SubCommand {
+class PvpSubCommand extends SubCommand
+{
 
 	/**
 	 * @param CommandSender $sender
@@ -44,5 +45,16 @@ class PvpSubCommand extends SubCommand {
 			$sender->sendMessage(TextFormat::RED.$this->translateString("error"));
 		}
 		return true;
+	}
+
+	/**
+	 * This is where all the arguments, permissions, sub-commands, etc would be registered
+	 */
+	protected function prepare() : void {
+		// TODO: Implement prepare() method.
+	}
+
+	public function onRun(CommandSender $sender, string $aliasUsed, array $args) : void {
+		// TODO: Implement onRun() method.
 	}
 }
