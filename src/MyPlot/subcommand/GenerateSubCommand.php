@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace MyPlot\subcommand;
 
+use CortexPE\Commando\args\BooleanArgument;
 use CortexPE\Commando\args\RawStringArgument;
 use MyPlot\Plot;
 use pocketmine\command\CommandSender;
@@ -50,7 +51,7 @@ class GenerateSubCommand extends SubCommand
 	 */
 	protected function prepare() : void {
 		$this->registerArgument(0, new RawStringArgument("name", false));
-		//$this->registerArgument(1, new EnumArgument("teleport", false));
+		$this->registerArgument(1, new BooleanArgument("teleport", false));
 		$this->registerArgument(2, new RawStringArgument("generator name", false));
 		// TODO: Implement prepare() method.
 	}
